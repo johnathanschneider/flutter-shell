@@ -552,7 +552,15 @@ void TitleBar::Paint(HWND window, HDC dc) const {
   // Title text, cut off with "..." if it doesn't fit.
   if (HFONT font = CreateCaptionTextFont(dpi)) {
     HGDIOBJ old_font = SelectObject(mem, font);
-    SetTextColor(mem, colors.text);
+    // Letters have soft edges, so text reads lighter than the button icons in
+    // the same colour. When unfocused, nudge the title 30% toward the focused
+    // text colour (darker in light mode, brighter in dark mode) to make up
+    // for it. High-contrast themes keep their exact system colours.
+    COLORREF text_color = colors.text;
+    if (!active_ && !high_contrast_) {
+      text_color = Blend(active_palette_.text, colors.text, 0.30);
+    }
+    SetTextColor(mem, text_color);
     RECT rect = TextRect(window);
     const std::wstring title = GetTitle(window);
     UINT format = DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX;
