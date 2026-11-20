@@ -51,6 +51,9 @@ class TitleBar {
     COLORREF close_hover;
     COLORREF close_pressed;
     COLORREF close_hover_text;
+    // Colour at the icon end of the bar, fading into |background| towards
+    // the buttons. Same as |background| when there's no tint.
+    COLORREF glow;
   };
 
   // Re-reads everything that comes from Windows settings: colours (theme,

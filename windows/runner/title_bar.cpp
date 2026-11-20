@@ -42,6 +42,13 @@ constexpr double kLightOverlayHover = 0.15;
 constexpr double kLightOverlayPressed = 0.10;
 constexpr double kClosePressedOpacity = 0.90;
 
+// Dark mode accent wash: how much accent colour is mixed into the dark
+// background at the icon end of the bar (focused / unfocused), and how far
+// across the bar (fraction of its width) it takes to fade out completely.
+constexpr double kDarkAccentGlowActive = 0.22;
+constexpr double kDarkAccentGlowInactive = 0.10;
+constexpr double kAccentGlowReach = 0.65;
+
 // Tooltip texts (the stock English ones).
 constexpr const wchar_t kMinimizeTip[] = L"Minimize";
 constexpr const wchar_t kMaximizeTip[] = L"Maximize";
@@ -379,6 +386,8 @@ void TitleBar::ReadSettings() {
     inactive_palette_ = active_palette_;
     inactive_palette_.background = GetSysColor(COLOR_INACTIVECAPTION);
     inactive_palette_.text = GetSysColor(COLOR_INACTIVECAPTIONTEXT);
+    active_palette_.glow = active_palette_.background;
+    inactive_palette_.glow = inactive_palette_.background;
     return;
   }
 
@@ -406,7 +415,8 @@ void TitleBar::ReadSettings() {
                    strong_text,
                    kCloseRed,
                    Blend(kCloseRed, background, kClosePressedOpacity),
-                   RGB(255, 255, 255)};
+                   RGB(255, 255, 255),
+                   background};
   };
 
   const COLORREF background = dark ? kDarkBackground : kLightBackground;
@@ -415,11 +425,24 @@ void TitleBar::ReadSettings() {
   inactive_palette_ =
       make(background, dark ? kDarkInactiveText : kLightInactiveText, text);
 
-  // "Show accent colour on title bars and window borders".
   DWORD prevalence = 0;
   DWORD accent = 0;
+  const bool has_accent = ReadRegistryDword(kDwm, L"AccentColor", &accent);
+
+  // Dark mode: a faint wash of the Windows accent colour at the icon end of
+  // the bar, fading out before the buttons. Weaker when unfocused.
+  if (dark && has_accent) {
+    const COLORREF accent_color = AbgrToColorRef(accent);
+    active_palette_.glow =
+        Blend(accent_color, background, kDarkAccentGlowActive);
+    inactive_palette_.glow =
+        Blend(accent_color, background, kDarkAccentGlowInactive);
+  }
+
+  // "Show accent colour on title bars and window borders" (replaces the
+  // above with a solid accent bar).
   if (ReadRegistryDword(kDwm, L"ColorPrevalence", &prevalence) &&
-      prevalence == 1 && ReadRegistryDword(kDwm, L"AccentColor", &accent)) {
+      prevalence == 1 && has_accent) {
     const COLORREF accent_color = AbgrToColorRef(accent);
     const COLORREF accent_text =
         IsLightColor(accent_color) ? RGB(0, 0, 0) : RGB(255, 255, 255);
@@ -541,6 +564,21 @@ void TitleBar::Paint(HWND window, HDC dc) const {
   HBRUSH background = CreateSolidBrush(colors.background);
   FillRect(mem, &strip, background);
   DeleteObject(background);
+
+  // Accent wash: one 1-pixel column at a time, from |glow| at the icon end
+  // easing smoothly into the background (mirrored for right-to-left).
+  if (colors.glow != colors.background) {
+    const int reach = static_cast<int>(width * kAccentGlowReach);
+    SelectObject(mem, GetStockObject(DC_BRUSH));
+    for (int i = 0; i < reach; i++) {
+      const double t = static_cast<double>(i) / reach;  // 0 at icon end
+      const double strength = 1.0 - t * t * (3.0 - 2.0 * t);  // smoothstep
+      SetDCBrushColor(mem, Blend(colors.glow, colors.background, strength));
+      const int x = right_to_left_ ? width - 1 - i : i;
+      const RECT column = {x, 0, x + 1, height_};
+      FillRect(mem, &column, static_cast<HBRUSH>(GetStockObject(DC_BRUSH)));
+    }
+  }
 
   // App icon.
   if (HICON icon = GetWindowSmallIcon(window)) {
