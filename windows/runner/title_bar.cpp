@@ -553,12 +553,15 @@ void TitleBar::Paint(HWND window, HDC dc) const {
   if (HFONT font = CreateCaptionTextFont(dpi)) {
     HGDIOBJ old_font = SelectObject(mem, font);
     // Letters have soft edges, so text reads lighter than the button icons in
-    // the same colour. When unfocused, nudge the title 30% toward the focused
-    // text colour (darker in light mode, brighter in dark mode) to make up
-    // for it. High-contrast themes keep their exact system colours.
+    // the same colour. When unfocused, nudge the title toward the focused
+    // text colour to make up for it: 30% (darker) on light title bars, 50%
+    // (lighter) on dark ones. High-contrast themes keep their exact system
+    // colours.
     COLORREF text_color = colors.text;
     if (!active_ && !high_contrast_) {
-      text_color = Blend(active_palette_.text, colors.text, 0.30);
+      const bool dark_bar = IsLightColor(active_palette_.text);
+      text_color =
+          Blend(active_palette_.text, colors.text, dark_bar ? 0.50 : 0.30);
     }
     SetTextColor(mem, text_color);
     RECT rect = TextRect(window);
