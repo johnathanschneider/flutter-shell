@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "title_bar.h"
+
 // A class abstraction for a high DPI-aware Win32 Window. Intended to be
 // inherited from by classes that wish to specialize with custom
 // rendering and input handling
@@ -90,42 +92,10 @@ class Win32Window {
   // Update the window frame's theme to match the system theme.
   static void UpdateTheme(HWND const window);
 
-  // Custom title bar: decides what the mouse is over in the title bar strip
-  // (resize border, one of our buttons, draggable caption, or client area).
-  LRESULT HitTestTitleBar(HWND const window, LPARAM const lparam);
-
-  // Custom title bar: the rectangle (client coordinates) of the button with
-  // hit-test code HTMINBUTTON, HTMAXBUTTON or HTCLOSE.
-  RECT TitleBarButtonRect(HWND const window, int const button);
-
-  // Custom title bar: paints the strip background and our three buttons.
-  void PaintTitleBar(HWND const window, HDC const dc);
-
-  // Custom title bar: asks Windows to repaint the strip.
-  void InvalidateTitleBar(HWND const window);
-
-  // Custom title bar: sets which button is hovered/pressed (or 0 for none)
-  // and repaints if anything changed.
-  void SetButtonState(HWND const window, int const hovered, int const pressed);
-
   bool quit_on_close_ = false;
 
-  // Height in pixels of the title bar strip at the top of the client area.
-  // Flutter's content is placed below it.
-  int caption_height_ = 0;
-
-  // Height in pixels of the top resize border inside that strip
-  // (0 when maximized, because there is nothing to resize).
-  int top_border_ = 0;
-
-  // Which of our buttons the mouse is over / pressing: HTMINBUTTON,
-  // HTMAXBUTTON, HTCLOSE, or 0 for none.
-  int hovered_button_ = 0;
-  int pressed_button_ = 0;
-
-  // Whether the window is the active (focused) window; inactive windows draw
-  // their button glyphs greyed out, like stock Windows.
-  bool active_ = true;
+  // The custom-drawn title bar; Flutter's content is placed below it.
+  TitleBar title_bar_;
 
   // window handle for top level window.
   HWND window_handle_ = nullptr;
