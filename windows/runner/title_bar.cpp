@@ -24,7 +24,7 @@ constexpr int kGlyphSize = 10;    // caption button icon font size
 // so both states use the solid colour Windows uses for unfocused title bars.
 constexpr COLORREF kLightBackground = RGB(0xCC, 0xCC, 0xCC);  // stock: F3F3F3
 constexpr COLORREF kLightText = RGB(0x00, 0x00, 0x00);
-constexpr COLORREF kLightInactiveText = RGB(0x91, 0x91, 0x91);
+constexpr COLORREF kLightInactiveText = RGB(0x5C, 0x5C, 0x5C);  // stock: 919191
 constexpr COLORREF kDarkBackground = RGB(0x20, 0x20, 0x20);
 constexpr COLORREF kDarkText = RGB(0xFF, 0xFF, 0xFF);
 constexpr COLORREF kDarkInactiveText = RGB(0x79, 0x79, 0x79);
@@ -33,11 +33,11 @@ constexpr COLORREF kCloseRed = RGB(0xC4, 0x2B, 0x1C);
 // Hovered / pressed minimize-maximize buttons are the background with a
 // translucent layer of the text colour on top. Stock Windows uses about
 // 4-6% hover and 2.5-4% pressed; ours are stronger to be more visible:
-//   dark text (light theme):  10% hover, 7% pressed
+//   dark text (light theme):  18% hover, 12% pressed
 //   light text (dark theme):  15% hover, 10% pressed
 // A pressed close button is the red at 90% over the background.
-constexpr double kDarkOverlayHover = 0.10;
-constexpr double kDarkOverlayPressed = 0.07;
+constexpr double kDarkOverlayHover = 0.18;
+constexpr double kDarkOverlayPressed = 0.12;
 constexpr double kLightOverlayHover = 0.15;
 constexpr double kLightOverlayPressed = 0.10;
 constexpr double kClosePressedOpacity = 0.90;
