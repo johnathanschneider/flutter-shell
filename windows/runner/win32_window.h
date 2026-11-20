@@ -90,7 +90,24 @@ class Win32Window {
   // Update the window frame's theme to match the system theme.
   static void UpdateTheme(HWND const window);
 
+  // Custom title bar: tells Windows (DWM) to draw its frame, including the
+  // min/max/close buttons, into the top |caption_height_| pixels of our
+  // client area.
+  void ExtendFrameIntoTitleBar(HWND const window);
+
+  // Custom title bar: decides what the mouse is over in the title bar strip
+  // (resize border, draggable caption, or plain client area).
+  LRESULT HitTestTitleBar(HWND const window, LPARAM const lparam);
+
   bool quit_on_close_ = false;
+
+  // Height in pixels of the title bar strip at the top of the client area.
+  // Flutter's content is placed below it.
+  int caption_height_ = 0;
+
+  // Height in pixels of the top resize border inside that strip
+  // (0 when maximized, because there is nothing to resize).
+  int top_border_ = 0;
 
   // window handle for top level window.
   HWND window_handle_ = nullptr;

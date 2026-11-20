@@ -2,6 +2,7 @@
 
 #include <dwmapi.h>
 #include <flutter_windows.h>
+#include <windowsx.h>
 
 #include "resource.h"
 
@@ -97,7 +98,10 @@ const wchar_t* WindowClassRegistrar::GetWindowClass() {
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hIcon =
         LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
-    window_class.hbrBackground = 0;
+    // Black, because DWM only shows its frame (the extended title bar) where
+    // the window's own pixels are black.
+    window_class.hbrBackground =
+        static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
     window_class.lpszMenuName = nullptr;
     window_class.lpfnWndProc = Win32Window::WndProc;
     RegisterClass(&window_class);
@@ -146,6 +150,11 @@ bool Win32Window::Create(const std::wstring& title,
 
   UpdateTheme(window);
 
+  // Make Windows recalculate the frame now, through our WM_NCCALCSIZE handler.
+  SetWindowPos(window, nullptr, 0, 0, 0, 0,
+               SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                   SWP_NOACTIVATE);
+
   return OnCreate();
 }
 
@@ -178,7 +187,48 @@ Win32Window::MessageHandler(HWND hwnd,
                             UINT const message,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
+  // Custom title bar: give DWM first chance at every message, so its
+  // min/max/close buttons get hover, press and click behaviour.
+  LRESULT dwm_result = 0;
+  if (DwmDefWindowProc(hwnd, message, wparam, lparam, &dwm_result)) {
+    return dwm_result;
+  }
+
   switch (message) {
+    // Custom title bar: decide where our client area (the part we own) starts.
+    case WM_NCCALCSIZE:
+      if (wparam == TRUE) {
+        auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
+        const LONG window_top = params->rgrc[0].top;
+
+        // Let Windows compute the stock layout (side and bottom borders stay
+        // stock), then measure how tall its title bar + top border would be.
+        LRESULT result = DefWindowProc(hwnd, message, wparam, lparam);
+        const int stock_top = params->rgrc[0].top - window_top;
+
+        const UINT dpi = GetDpiForWindow(hwnd);
+        const int border = GetSystemMetricsForDpi(SM_CYFRAME, dpi) +
+                           GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+
+        if (IsZoomed(hwnd)) {
+          // The fix: when maximized, the top border hangs off-screen, so
+          // start our area at the visible screen edge, not the window edge.
+          params->rgrc[0].top = window_top + border;
+          top_border_ = 0;
+          caption_height_ = stock_top - border;
+        } else {
+          // Take over the whole top, including the resize border.
+          params->rgrc[0].top = window_top;
+          top_border_ = border;
+          caption_height_ = stock_top;
+        }
+        return result;
+      }
+      break;
+
+    case WM_NCHITTEST:
+      return HitTestTitleBar(hwnd, lparam);
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();
@@ -198,6 +248,7 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
     }
     case WM_SIZE: {
+      ExtendFrameIntoTitleBar(hwnd);
       RECT rect = GetClientArea();
       if (child_content_ != nullptr) {
         // Size and position the child window.
@@ -208,6 +259,7 @@ Win32Window::MessageHandler(HWND hwnd,
     }
 
     case WM_ACTIVATE:
+      ExtendFrameIntoTitleBar(hwnd);
       if (child_content_ != nullptr) {
         SetFocus(child_content_);
       }
@@ -252,7 +304,49 @@ void Win32Window::SetChildContent(HWND content) {
 RECT Win32Window::GetClientArea() {
   RECT frame;
   GetClientRect(window_handle_, &frame);
+  // Flutter's content goes below the title bar strip.
+  frame.top += caption_height_;
+  if (frame.top > frame.bottom) {
+    frame.top = frame.bottom;
+  }
   return frame;
+}
+
+void Win32Window::ExtendFrameIntoTitleBar(HWND const window) {
+  MARGINS margins = {0, 0, caption_height_, 0};
+  DwmExtendFrameIntoClientArea(window, &margins);
+}
+
+LRESULT Win32Window::HitTestTitleBar(HWND const window, LPARAM const lparam) {
+  // Side and bottom borders are still stock, so Windows answers for those.
+  LRESULT hit = DefWindowProc(window, WM_NCHITTEST, 0, lparam);
+  if (hit != HTCLIENT) {
+    return hit;
+  }
+
+  POINT point = {GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+  ScreenToClient(window, &point);
+
+  // Top resize border (only present when not maximized), with corners.
+  if (point.y < top_border_) {
+    RECT client;
+    GetClientRect(window, &client);
+    if (point.x < top_border_) {
+      return HTTOPLEFT;
+    }
+    if (point.x >= client.right - top_border_) {
+      return HTTOPRIGHT;
+    }
+    return HTTOP;
+  }
+
+  // The rest of the strip drags the window, double-click maximizes,
+  // right-click opens the system menu: all handled by Windows for HTCAPTION.
+  if (point.y < caption_height_) {
+    return HTCAPTION;
+  }
+
+  return HTCLIENT;
 }
 
 HWND Win32Window::GetHandle() {
