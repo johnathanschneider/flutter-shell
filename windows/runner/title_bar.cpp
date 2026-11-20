@@ -22,7 +22,7 @@ constexpr int kGlyphSize = 10;    // caption button icon font size
 // Stock colours. Windows 11 draws the *focused* title bar over "Mica" (a
 // material tinted by the desktop wallpaper), which we can't reproduce here,
 // so both states use the solid colour Windows uses for unfocused title bars.
-constexpr COLORREF kLightBackground = RGB(0xDA, 0xDA, 0xDA);  // stock: F3F3F3
+constexpr COLORREF kLightBackground = RGB(0xCC, 0xCC, 0xCC);  // stock: F3F3F3
 constexpr COLORREF kLightText = RGB(0x00, 0x00, 0x00);
 constexpr COLORREF kLightInactiveText = RGB(0x91, 0x91, 0x91);
 constexpr COLORREF kDarkBackground = RGB(0x20, 0x20, 0x20);
