@@ -232,26 +232,27 @@ Win32Window::MessageHandler(HWND hwnd,
         auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
         const LONG window_top = params->rgrc[0].top;
 
-        // Let Windows compute the stock layout (side and bottom borders stay
-        // stock), then measure how tall its title bar + top border would be.
+        // Let Windows compute the stock layout; the side and bottom borders
+        // stay stock, and we replace the top below.
         LRESULT result = DefWindowProc(hwnd, message, wparam, lparam);
-        const int stock_top = params->rgrc[0].top - window_top;
 
         const UINT dpi = GetDpiForWindow(hwnd);
         const int border = GetSystemMetricsForDpi(SM_CYFRAME, dpi) +
                            GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
 
+        // One title bar height for both states (like Firefox): the stock
+        // un-maximized title bar, i.e. caption + top border.
+        caption_height_ = GetSystemMetricsForDpi(SM_CYCAPTION, dpi) + border;
+
         if (IsZoomed(hwnd)) {
-          // The fix: when maximized, the top border hangs off-screen, so
-          // start our area at the visible screen edge, not the window edge.
+          // When maximized, the top border hangs off-screen, so start our
+          // area at the visible screen edge, not the window edge.
           params->rgrc[0].top = window_top + border;
           top_border_ = 0;
-          caption_height_ = stock_top - border;
         } else {
           // Take over the whole top, including the resize border.
           params->rgrc[0].top = window_top;
           top_border_ = border;
-          caption_height_ = stock_top;
         }
         return result;
       }
