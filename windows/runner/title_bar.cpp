@@ -31,14 +31,15 @@ constexpr COLORREF kDarkInactiveText = RGB(0x79, 0x79, 0x79);
 constexpr COLORREF kCloseRed = RGB(0xC4, 0x2B, 0x1C);
 
 // Hovered / pressed minimize-maximize buttons are the background with a
-// translucent layer of the text colour on top (measured):
-//   dark text (light theme):  4.1% hover, 2.5% pressed
-//   light text (dark theme):  5.8% hover, 4.2% pressed
+// translucent layer of the text colour on top. Stock Windows uses about
+// 4-6% hover and 2.5-4% pressed; ours are stronger to be more visible:
+//   dark text (light theme):  9% hover, 6% pressed
+//   light text (dark theme):  12% hover, 8% pressed
 // A pressed close button is the red at 90% over the background.
-constexpr double kDarkOverlayHover = 0.041;
-constexpr double kDarkOverlayPressed = 0.025;
-constexpr double kLightOverlayHover = 0.058;
-constexpr double kLightOverlayPressed = 0.042;
+constexpr double kDarkOverlayHover = 0.09;
+constexpr double kDarkOverlayPressed = 0.06;
+constexpr double kLightOverlayHover = 0.12;
+constexpr double kLightOverlayPressed = 0.08;
 constexpr double kClosePressedOpacity = 0.90;
 
 // Tooltip texts (the stock English ones).
