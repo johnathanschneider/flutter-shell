@@ -600,6 +600,16 @@ void TitleBar::Paint(HWND window, HDC dc) const {
     }
     SetTextColor(mem, glyph);
     DrawTextW(mem, &symbol, 1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    // The close "X" is diagonal, so smoothing spreads each line over two
+    // pixels and it looks lighter than the straight minimize/maximize lines.
+    // Drawing it twice more on top darkens those half-covered pixels so all
+    // three read as the same shade. (Not on the red hover/pressed fill.)
+    if (is_close && !hovered && !pressed) {
+      for (int i = 0; i < 2; i++) {
+        DrawTextW(mem, &symbol, 1, &rect,
+                  DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+      }
+    }
   }
   if (glyph_font) {
     SelectObject(mem, old_font);
