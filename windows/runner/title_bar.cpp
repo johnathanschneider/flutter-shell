@@ -22,7 +22,7 @@ constexpr int kGlyphSize = 10;    // caption button icon font size
 // Stock colours. Windows 11 draws the *focused* title bar over "Mica" (a
 // material tinted by the desktop wallpaper), which we can't reproduce here,
 // so both states use the solid colour Windows uses for unfocused title bars.
-constexpr COLORREF kLightBackground = RGB(0xF3, 0xF3, 0xF3);
+constexpr COLORREF kLightBackground = RGB(0xE8, 0xE8, 0xE8);  // stock: F3F3F3
 constexpr COLORREF kLightText = RGB(0x00, 0x00, 0x00);
 constexpr COLORREF kLightInactiveText = RGB(0x91, 0x91, 0x91);
 constexpr COLORREF kDarkBackground = RGB(0x20, 0x20, 0x20);
@@ -384,6 +384,11 @@ void TitleBar::ReadSettings() {
 
   DWORD light_mode = 1;
   ReadRegistryDword(kPersonalize, L"AppsUseLightTheme", &light_mode);
+  // TITLEBAR_FORCE_THEME=light/dark overrides the setting, for testing.
+  wchar_t forced[8] = {};
+  if (GetEnvironmentVariableW(L"TITLEBAR_FORCE_THEME", forced, 8) > 0) {
+    light_mode = wcscmp(forced, L"dark") == 0 ? 0 : 1;
+  }
   const bool dark = light_mode == 0;
 
   // Builds a palette for a background + text colour, using the measured
