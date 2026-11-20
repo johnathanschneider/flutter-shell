@@ -33,13 +33,13 @@ constexpr COLORREF kCloseRed = RGB(0xC4, 0x2B, 0x1C);
 // Hovered / pressed minimize-maximize buttons are the background with a
 // translucent layer of the text colour on top. Stock Windows uses about
 // 4-6% hover and 2.5-4% pressed; ours are stronger to be more visible:
-//   dark text (light theme):  9% hover, 6% pressed
-//   light text (dark theme):  12% hover, 8% pressed
+//   dark text (light theme):  10% hover, 7% pressed
+//   light text (dark theme):  15% hover, 10% pressed
 // A pressed close button is the red at 90% over the background.
-constexpr double kDarkOverlayHover = 0.09;
-constexpr double kDarkOverlayPressed = 0.06;
-constexpr double kLightOverlayHover = 0.12;
-constexpr double kLightOverlayPressed = 0.08;
+constexpr double kDarkOverlayHover = 0.10;
+constexpr double kDarkOverlayPressed = 0.07;
+constexpr double kLightOverlayHover = 0.15;
+constexpr double kLightOverlayPressed = 0.10;
 constexpr double kClosePressedOpacity = 0.90;
 
 // Tooltip texts (the stock English ones).
@@ -389,7 +389,7 @@ void TitleBar::ReadSettings() {
   // Builds a palette for a background + text colour, using the measured
   // hover/pressed overlays.
   auto make = [](COLORREF background, COLORREF text, COLORREF strong_text) {
-    const bool light_text = !IsLightColor(strong_text);
+    const bool light_text = IsLightColor(strong_text);
     const COLORREF overlay = light_text ? RGB(255, 255, 255) : RGB(0, 0, 0);
     const double hover = light_text ? kLightOverlayHover : kDarkOverlayHover;
     const double pressed =
