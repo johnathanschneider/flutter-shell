@@ -3,7 +3,8 @@ import 'package:flutter/widgets.dart';
 
 import 'theme_setting.dart';
 
-// Talks to the native side (windows/runner/flutter_window.cpp). We send the
+// Talks to the native side (windows/runner/flutter_window.cpp,
+// macos/Runner/MainFlutterWindow.swift). We send the
 // light/dark setting ("setMode"); it answers, and later pushes changes
 // ("changed"), with {"dark": bool, "contrast": 0xAARRGGBB or null}.
 const _theme = MethodChannel('flutter_shell/theme');
@@ -16,7 +17,7 @@ Future<void> main() async {
   try {
     info = await _theme.invokeMethod<Object?>('setMode', themeSetting.name);
   } on MissingPluginException {
-    // No native side for this platform (yet): plain light page.
+    // No native side for this platform (e.g. Linux): plain light page.
   }
   runApp(Page(initialTheme: info));
 }
