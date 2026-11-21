@@ -19,7 +19,7 @@ namespace {
 // ---------------------------------------------------------------------------
 constexpr int kButtonWidth = 46;  // each caption button
 constexpr int kIconLeft = 7;      // client left edge -> app icon
-constexpr int kIconTextGap = 6;   // app icon -> title text
+constexpr int kIconTextGap = 10;   // app icon -> title text
 constexpr int kTextButtonGap = 8; // title text (ellipsis) -> buttons
 constexpr int kGlyphSize = 10;    // caption button icon font size
 
