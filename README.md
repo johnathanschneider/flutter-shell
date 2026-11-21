@@ -1,0 +1,1 @@
+Custom build of stock windows flutter application shell experience. Stock generated shell contains the never-fixed windows titlebar scaling bug, contrast bugs, does not support light mode or dark mode, and does not target the modern windows UI design language.
