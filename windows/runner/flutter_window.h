@@ -2,7 +2,9 @@
 #define RUNNER_FLUTTER_WINDOW_H_
 
 #include <flutter/dart_project.h>
+#include <flutter/encodable_value.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
 
 #include <memory>
 
@@ -28,6 +30,13 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  // Tells Dart the page background colour for contrast themes (see
+  // lib/main.dart): the theme's Background colour as 0xAARRGGBB, or null
+  // when no contrast theme is on.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
+      contrast_channel_;
+  void SendContrastBackground();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
