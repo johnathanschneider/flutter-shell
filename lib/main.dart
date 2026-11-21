@@ -23,7 +23,7 @@ class Page extends StatefulWidget {
 class _PageState extends State<Page> {
   // Set up by the Windows runner (windows/runner/flutter_window.cpp). It
   // sends {"dark": bool, "contrast": 0xAARRGGBB or null}.
-  static const _theme = MethodChannel('sketchpad/theme');
+  static const _theme = MethodChannel('flutter_shell/theme');
 
   // Moderate shades, not pure white/black: easier on the eyes.
   static const _light = Color(0xFFEBEBEB);

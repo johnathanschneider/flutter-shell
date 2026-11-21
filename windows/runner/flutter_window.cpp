@@ -56,7 +56,7 @@ bool FlutterWindow::OnCreate() {
   // Dart asks for the colour at startup ("get"); we push changes ("changed").
   theme_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          flutter_controller_->engine()->messenger(), "sketchpad/theme",
+          flutter_controller_->engine()->messenger(), "flutter_shell/theme",
           &flutter::StandardMethodCodec::GetInstance());
   theme_channel_->SetMethodCallHandler(
       [](const auto& call, auto result) {
