@@ -53,21 +53,6 @@ constexpr double kDarkAccentGlowActive = 0.22;
 constexpr double kDarkAccentGlowInactive = 0.10;
 constexpr double kAccentGlowReach = 1.0;
 
-// Which colours to use when a Windows contrast theme (high contrast) is on.
-enum class HighContrastStyle {
-  // How Windows 11's own apps (and most modern apps) do it: the title bar
-  // uses the theme's Background and Text colours, unfocused text uses
-  // Inactive text, and hovered buttons use Selected text (Highlight). These
-  // are all colours you can edit in the contrast theme editor.
-  kModern,
-  // The original Win32 title bar colours (Active/Inactive Title and Title
-  // Text). They're set by the theme file and can't be edited in Settings;
-  // in the built-in themes they're e.g. bright yellow (Aquatic) or near-white
-  // (Dusk) bars on otherwise dark themes.
-  kClassic,
-};
-constexpr HighContrastStyle kHighContrastStyle = HighContrastStyle::kModern;
-
 // Tooltip texts (the stock English ones).
 constexpr const wchar_t kMinimizeTip[] = L"Minimize";
 constexpr const wchar_t kMaximizeTip[] = L"Maximize";
@@ -417,26 +402,22 @@ void TitleBar::ReadSettings() {
 
   right_to_left_ = DisplayLanguageIsRightToLeft();
 
-  // High contrast: use the theme's system colours, like stock Windows.
+  // Contrast themes: the theme's colours, the way Windows 11's own apps use
+  // them (all editable in the contrast theme editor): the bar is Background,
+  // unfocused text is Inactive text, hovered/pressed buttons are Selected
+  // text (Highlight). Title text and icons use Button text (see Paint).
   HIGHCONTRASTW contrast = {sizeof(contrast)};
   SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0);
   high_contrast_ = (contrast.dwFlags & HCF_HIGHCONTRASTON) != 0;
   if (high_contrast_) {
-    // Either way, hovered/pressed buttons (close too) use the theme's
-    // Highlight colours.
     const COLORREF highlight = GetSysColor(COLOR_HIGHLIGHT);
     const COLORREF highlight_text = GetSysColor(COLOR_HIGHLIGHTTEXT);
-    const bool modern = kHighContrastStyle == HighContrastStyle::kModern;
-    active_palette_ = {
-        GetSysColor(modern ? COLOR_WINDOW : COLOR_ACTIVECAPTION),
-        GetSysColor(modern ? COLOR_WINDOWTEXT : COLOR_CAPTIONTEXT),
-        highlight, highlight, highlight_text,
-        highlight, highlight, highlight_text};
+    active_palette_ = {GetSysColor(COLOR_WINDOW),
+                       GetSysColor(COLOR_WINDOWTEXT),
+                       highlight, highlight, highlight_text,
+                       highlight, highlight, highlight_text};
     inactive_palette_ = active_palette_;
-    inactive_palette_.background =
-        GetSysColor(modern ? COLOR_WINDOW : COLOR_INACTIVECAPTION);
-    inactive_palette_.text =
-        GetSysColor(modern ? COLOR_GRAYTEXT : COLOR_INACTIVECAPTIONTEXT);
+    inactive_palette_.text = GetSysColor(COLOR_GRAYTEXT);
     active_palette_.glow = active_palette_.background;
     inactive_palette_.glow = inactive_palette_.background;
     return;
@@ -650,11 +631,9 @@ void TitleBar::Paint(HWND window, HDC dc) const {
   }
 
   // Title text, cut off with "..." if it doesn't fit.
-  // Contrast themes (modern style): bold title in the theme's Button text
-  // colour, matching the caption icons.
-  const bool contrast_title =
-      high_contrast_ && kHighContrastStyle == HighContrastStyle::kModern;
-  if (HFONT font = CreateCaptionTextFont(dpi, contrast_title)) {
+  // Contrast themes: bold title in the theme's Button text colour, matching
+  // the caption icons.
+  if (HFONT font = CreateCaptionTextFont(dpi, high_contrast_)) {
     HGDIOBJ old_font = SelectObject(mem, font);
     // Letters have soft edges, so text reads lighter than the button icons in
     // the same colour. When unfocused, nudge the title toward the focused
@@ -667,7 +646,7 @@ void TitleBar::Paint(HWND window, HDC dc) const {
       text_color =
           Blend(active_palette_.text, colors.text, dark_bar ? 0.50 : 0.30);
     }
-    if (contrast_title) {
+    if (high_contrast_) {
       text_color = GetSysColor(COLOR_BTNTEXT);
     }
     SetTextColor(mem, text_color);
@@ -694,11 +673,9 @@ void TitleBar::Paint(HWND window, HDC dc) const {
 
     COLORREF fill = colors.background;
     COLORREF glyph = colors.text;
-    // Contrast themes (modern style), focused or not: the icons take the
-    // theme's Button text colour (e.g. yellow in Night sky), like Windows
-    // 11's Settings app.
-    if (high_contrast_ &&
-        kHighContrastStyle == HighContrastStyle::kModern) {
+    // Contrast themes, focused or not: the icons take the theme's Button
+    // text colour (e.g. yellow in Night sky), like Windows 11's Settings app.
+    if (high_contrast_) {
       glyph = GetSysColor(COLOR_BTNTEXT);
     }
     if (pressed) {
