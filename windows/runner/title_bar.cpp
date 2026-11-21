@@ -47,7 +47,7 @@ constexpr double kClosePressedOpacity = 0.90;
 // across the bar (fraction of its width) it takes to fade out completely.
 constexpr double kDarkAccentGlowActive = 0.22;
 constexpr double kDarkAccentGlowInactive = 0.10;
-constexpr double kAccentGlowReach = 0.65;
+constexpr double kAccentGlowReach = 1.0;
 
 // Tooltip texts (the stock English ones).
 constexpr const wchar_t kMinimizeTip[] = L"Minimize";
