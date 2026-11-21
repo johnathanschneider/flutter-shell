@@ -134,11 +134,14 @@ bool DisplayLanguageIsRightToLeft() {
 }
 
 // The font Windows uses for title text, at this DPI.
-HFONT CreateCaptionTextFont(UINT dpi) {
+HFONT CreateCaptionTextFont(UINT dpi, bool bold) {
   NONCLIENTMETRICSW metrics = {sizeof(metrics)};
   if (!SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS, sizeof(metrics),
                                   &metrics, 0, dpi)) {
     return nullptr;
+  }
+  if (bold) {
+    metrics.lfCaptionFont.lfWeight = FW_BOLD;
   }
   return CreateFontIndirectW(&metrics.lfCaptionFont);
 }
@@ -654,7 +657,11 @@ void TitleBar::Paint(HWND window, HDC dc) const {
   }
 
   // Title text, cut off with "..." if it doesn't fit.
-  if (HFONT font = CreateCaptionTextFont(dpi)) {
+  // Contrast themes (modern style): bold title in the theme's Button text
+  // colour, matching the caption icons.
+  const bool contrast_title =
+      high_contrast_ && kHighContrastStyle == HighContrastStyle::kModern;
+  if (HFONT font = CreateCaptionTextFont(dpi, contrast_title)) {
     HGDIOBJ old_font = SelectObject(mem, font);
     // Letters have soft edges, so text reads lighter than the button icons in
     // the same colour. When unfocused, nudge the title toward the focused
@@ -666,6 +673,9 @@ void TitleBar::Paint(HWND window, HDC dc) const {
       const bool dark_bar = IsLightColor(active_palette_.text);
       text_color =
           Blend(active_palette_.text, colors.text, dark_bar ? 0.50 : 0.30);
+    }
+    if (contrast_title) {
+      text_color = GetSysColor(COLOR_BTNTEXT);
     }
     SetTextColor(mem, text_color);
     RECT rect = TextRect(window);
