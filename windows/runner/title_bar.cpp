@@ -19,7 +19,7 @@ namespace {
 // (96 DPI). Taken from screenshots of a stock window.
 // ---------------------------------------------------------------------------
 constexpr int kButtonWidth = 46;  // each caption button
-constexpr int kIconLeft = 7;      // client left edge -> app icon
+constexpr int kIconLeft = 16;      // client left edge -> app icon
 constexpr int kIconTextGap = 20;   // app icon -> title text
 constexpr int kTextButtonGap = 8; // title text (ellipsis) -> buttons
 constexpr int kGlyphSize = 10;    // caption button icon font size
