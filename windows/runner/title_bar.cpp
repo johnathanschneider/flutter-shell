@@ -630,10 +630,9 @@ void TitleBar::Paint(HWND window, HDC dc) const {
                rect.bottom - rect.top, 0, nullptr, DI_NORMAL);
   }
 
-  // Title text, cut off with "..." if it doesn't fit.
-  // Contrast themes: bold title in the theme's Button text colour, matching
-  // the caption icons.
-  if (HFONT font = CreateCaptionTextFont(dpi, high_contrast_)) {
+  // Title text, bold, cut off with "..." if it doesn't fit. In contrast
+  // themes it's in the theme's Button text colour, matching the icons.
+  if (HFONT font = CreateCaptionTextFont(dpi, /*bold=*/true)) {
     HGDIOBJ old_font = SelectObject(mem, font);
     // Letters have soft edges, so text reads lighter than the button icons in
     // the same colour. When unfocused, nudge the title toward the focused
