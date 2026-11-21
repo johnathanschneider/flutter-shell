@@ -60,6 +60,10 @@ class TitleBar {
   // accent, high contrast) and reading direction.
   void ReadSettings();
 
+  // Height of the coloured top border band drawn in contrast themes (0
+  // otherwise); the title bar's contents sit below it.
+  int FrameBand() const;
+
   // Layout, in client coordinates.
   RECT ButtonRect(HWND window, int button) const;
   RECT IconRect(HWND window) const;

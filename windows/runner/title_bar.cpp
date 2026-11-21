@@ -505,13 +505,20 @@ void TitleBar::ReadSettings() {
   }
 }
 
+int TitleBar::FrameBand() const {
+  // In contrast themes Windows paints window borders in the theme's title
+  // colour; we own the top border, so we paint it (only when not maximized,
+  // like stock, since a maximized window's border is off-screen).
+  return high_contrast_ ? top_border_ : 0;
+}
+
 RECT TitleBar::ButtonRect(HWND window, int button) const {
   RECT client;
   GetClientRect(window, &client);
   const int width = Scale(kButtonWidth, GetDpiForWindow(window));
   // Counting from the outer edge: close, maximize, minimize.
   const int index = button == HTCLOSE ? 0 : button == HTMAXBUTTON ? 1 : 2;
-  RECT rect = {0, 0, 0, height_};
+  RECT rect = {0, FrameBand(), 0, height_};
   if (right_to_left_) {
     rect.left = client.left + index * width;
     rect.right = rect.left + width;
@@ -528,7 +535,8 @@ RECT TitleBar::IconRect(HWND window) const {
   const UINT dpi = GetDpiForWindow(window);
   const int size = GetSystemMetricsForDpi(SM_CXSMICON, dpi);
   const int left = Scale(kIconLeft, dpi);
-  const int top = (height_ - size) / 2;
+  const int band = FrameBand();
+  const int top = band + (height_ - band - size) / 2;
   if (right_to_left_) {
     return {client.right - left - size, top, client.right - left, top + size};
   }
@@ -542,10 +550,10 @@ RECT TitleBar::TextRect(HWND window) const {
   const int button_gap = Scale(kTextButtonGap, dpi);
   if (right_to_left_) {
     const RECT last = ButtonRect(window, HTMINBUTTON);
-    return {last.right + button_gap, 0, icon.left - gap, height_};
+    return {last.right + button_gap, FrameBand(), icon.left - gap, height_};
   }
   const RECT first = ButtonRect(window, HTMINBUTTON);
-  return {icon.right + gap, 0, first.left - button_gap, height_};
+  return {icon.right + gap, FrameBand(), first.left - button_gap, height_};
 }
 
 LRESULT TitleBar::HitTest(HWND window, LPARAM lparam) const {
@@ -612,6 +620,16 @@ void TitleBar::Paint(HWND window, HDC dc) const {
   HBRUSH background = CreateSolidBrush(colors.background);
   FillRect(mem, &strip, background);
   DeleteObject(background);
+
+  // Contrast themes: the top border band, matching the sides Windows draws
+  // (focused: Active Title colour, unfocused: Inactive Title colour).
+  if (const int band = FrameBand()) {
+    HBRUSH frame = CreateSolidBrush(
+        GetSysColor(active_ ? COLOR_ACTIVECAPTION : COLOR_INACTIVECAPTION));
+    const RECT top = {0, 0, width, band};
+    FillRect(mem, &top, frame);
+    DeleteObject(frame);
+  }
 
   // Accent wash: one 1-pixel column at a time, from |glow| at the icon end
   // easing smoothly into the background (mirrored for right-to-left).
