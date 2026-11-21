@@ -1,0 +1,50 @@
+# Builds the app on GitHub's machines on every push to main (and on demand
+# from the Actions tab). The macOS build is the only way to compile the Mac
+# side without a Mac. Each run's built apps can be downloaded from the run's
+# page under "Artifacts".
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.50.0  # same as local development
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter build macos --release
+      # Zip with ditto so the .app bundle keeps its macOS metadata.
+      - run: >
+          ditto -c -k --keepParent
+          build/macos/Build/Products/Release/flutter_shell.app
+          flutter_shell-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter_shell-macos
+          path: flutter_shell-macos.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.50.0
+          cache: true
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter_shell-windows
+          path: build/windows/x64/runner/Release/
