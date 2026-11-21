@@ -325,6 +325,13 @@ void Win32Window::OnDestroy() {
   // No-op; provided for subclasses.
 }
 
+void Win32Window::RefreshTheme() {
+  if (window_handle_) {
+    UpdateTheme(window_handle_);
+    title_bar_.Refresh(window_handle_);
+  }
+}
+
 void Win32Window::UpdateTheme(HWND const window) {
   BOOL enable_dark_mode = AppUsesDarkMode();  // see app_theme.h
   DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,

@@ -53,18 +53,29 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
 
-  // Dart asks for the colour at startup ("get"); we push changes ("changed").
+  // Dart sends the app's light/dark setting at startup ("setMode", before
+  // the first frame, so before the window shows) and gets back what the
+  // page needs; we push changes after that ("changed").
   theme_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           flutter_controller_->engine()->messenger(), "flutter_shell/theme",
           &flutter::StandardMethodCodec::GetInstance());
   theme_channel_->SetMethodCallHandler(
-      [](const auto& call, auto result) {
-        if (call.method_name() == "get") {
-          result->Success(ThemeInfo());
-        } else {
+      [this](const auto& call, auto result) {
+        if (call.method_name() != "setMode") {
           result->NotImplemented();
+          return;
         }
+        const auto* mode = std::get_if<std::string>(call.arguments());
+        if (!mode) {
+          result->Error("bad-argument", "expected system, light or dark");
+          return;
+        }
+        g_theme_mode = *mode == "light"  ? ThemeMode::kLight
+                       : *mode == "dark" ? ThemeMode::kDark
+                                         : ThemeMode::kSystem;
+        RefreshTheme();
+        result->Success(ThemeInfo());
       });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 

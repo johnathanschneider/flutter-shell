@@ -14,8 +14,10 @@ enum class ThemeMode {
   kDark,    // always dark
 };
 
-// The setting. Change it and rebuild.
-constexpr ThemeMode kThemeMode = ThemeMode::kSystem;
+// The current setting. The setting itself lives in Dart
+// (lib/theme_setting.dart), which sends it here at startup, before the
+// window is first shown (see FlutterWindow).
+inline ThemeMode g_theme_mode = ThemeMode::kSystem;
 
 // True if the app should currently look dark. (Contrast themes override
 // light/dark entirely; that's handled where the colours are picked.)
@@ -25,8 +27,8 @@ inline bool AppUsesDarkMode() {
   if (GetEnvironmentVariableW(L"TITLEBAR_FORCE_THEME", forced, 8) > 0) {
     return wcscmp(forced, L"dark") == 0;
   }
-  if (kThemeMode != ThemeMode::kSystem) {
-    return kThemeMode == ThemeMode::kDark;
+  if (g_theme_mode != ThemeMode::kSystem) {
+    return g_theme_mode == ThemeMode::kDark;
   }
   DWORD light_mode = 1;
   DWORD size = sizeof(light_mode);

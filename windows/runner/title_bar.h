@@ -37,6 +37,10 @@ class TitleBar {
                                        WPARAM wparam,
                                        LPARAM lparam);
 
+  // Re-reads colours and redraws, after the app's light/dark setting
+  // changed (Windows' own setting changes are picked up automatically).
+  void Refresh(HWND window);
+
   // Height in pixels of the title bar strip at the top of the client area.
   int height() const { return height_; }
 

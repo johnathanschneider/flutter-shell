@@ -58,6 +58,10 @@ class Win32Window {
   RECT GetClientArea();
 
  protected:
+  // Re-applies the app's light/dark setting (AppUsesDarkMode) to the window
+  // border and title bar.
+  void RefreshTheme();
+
   // Processes and route salient window messages for mouse handling,
   // size change and DPI. Delegates handling of these to member overloads that
   // inheriting classes can handle.

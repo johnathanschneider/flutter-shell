@@ -604,6 +604,12 @@ void TitleBar::ShowSystemMenu(HWND window) const {
   }
 }
 
+void TitleBar::Refresh(HWND window) {
+  ReadSettings();
+  UpdateTooltips(window);
+  Invalidate(window);
+}
+
 LRESULT TitleBar::HitTest(HWND window, LPARAM lparam) const {
   // Side and bottom borders are still stock, so Windows answers for those.
   const LRESULT hit = DefWindowProcW(window, WM_NCHITTEST, 0, lparam);
