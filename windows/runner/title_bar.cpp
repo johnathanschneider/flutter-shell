@@ -692,10 +692,11 @@ void TitleBar::Paint(HWND window, HDC dc) const {
     COLORREF fill = colors.background;
     COLORREF glyph = colors.text;
     // Contrast themes (modern style), focused: the icons take the theme's
-    // title colour (e.g. yellow in Aquatic), like Windows 11's Settings app.
+    // Button text colour (e.g. yellow in Night sky), like Windows 11's
+    // Settings app.
     if (high_contrast_ && active_ &&
         kHighContrastStyle == HighContrastStyle::kModern) {
-      glyph = GetSysColor(COLOR_ACTIVECAPTION);
+      glyph = GetSysColor(COLOR_BTNTEXT);
     }
     if (pressed) {
       fill = is_close ? colors.close_pressed : colors.pressed;
