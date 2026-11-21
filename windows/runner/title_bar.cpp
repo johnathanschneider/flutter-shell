@@ -575,9 +575,16 @@ LRESULT TitleBar::HitTest(HWND window, LPARAM lparam) const {
         return button;
       }
     }
-    // Icon: click opens the system menu, double-click closes (stock).
-    const RECT icon = IconRect(window);
-    if (point.x >= icon.left && point.x < icon.right) {
+    // Icon: click opens the system menu, double-click closes (stock). The
+    // target is the whole corner, a caption button wide and the full bar
+    // tall, not just the 16x16 icon - the same size as the close button.
+    RECT client;
+    GetClientRect(window, &client);
+    const int menu_width = Scale(kButtonWidth, GetDpiForWindow(window));
+    const bool in_menu_corner = right_to_left_
+                                    ? point.x >= client.right - menu_width
+                                    : point.x < client.left + menu_width;
+    if (in_menu_corner) {
       return HTSYSMENU;
     }
     // The rest drags the window; double-click maximizes; right-click opens
