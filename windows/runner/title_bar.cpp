@@ -8,6 +8,7 @@
 #include <oleacc.h>
 #include <windowsx.h>
 
+#include <algorithm>
 #include <cwchar>
 #include <string>
 
@@ -19,7 +20,7 @@ namespace {
 // ---------------------------------------------------------------------------
 constexpr int kButtonWidth = 46;  // each caption button
 constexpr int kIconLeft = 7;      // client left edge -> app icon
-constexpr int kIconTextGap = 10;   // app icon -> title text
+constexpr int kIconTextGap = 20;   // app icon -> title text
 constexpr int kTextButtonGap = 8; // title text (ellipsis) -> buttons
 constexpr int kGlyphSize = 10;    // caption button icon font size
 
@@ -649,11 +650,25 @@ void TitleBar::Paint(HWND window, HDC dc) const {
       text_color = GetSysColor(COLOR_BTNTEXT);
     }
     SetTextColor(mem, text_color);
-    RECT rect = TextRect(window);
+    // Centred across the whole bar. If the window is too narrow for that,
+    // slide it over so it stays clear of the icon and the buttons (and cut
+    // it off with "..." if even that isn't enough).
+    RECT rect = TextRect(window);  // the space it's allowed in
     const std::wstring title = GetTitle(window);
     UINT format = DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX;
     if (right_to_left_) {
-      format |= DT_RIGHT | DT_RTLREADING;
+      format |= DT_RTLREADING;
+    }
+    RECT measured = {0, 0, 0, 0};
+    DrawTextW(mem, title.c_str(), static_cast<int>(title.size()), &measured,
+              DT_SINGLELINE | DT_NOPREFIX | DT_CALCRECT);
+    const int text_width = measured.right - measured.left;
+    if (text_width < rect.right - rect.left) {
+      int left = (width - text_width) / 2;
+      left = std::max(left, static_cast<int>(rect.left));
+      left = std::min(left, static_cast<int>(rect.right) - text_width);
+      rect.left = left;
+      rect.right = left + text_width;
     }
     DrawTextW(mem, title.c_str(), static_cast<int>(title.size()), &rect,
               format);
