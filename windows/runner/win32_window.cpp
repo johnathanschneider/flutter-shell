@@ -2,6 +2,8 @@
 
 #include "app_theme.h"
 
+#include <algorithm>
+
 #include <dwmapi.h>
 #include <flutter_windows.h>
 
@@ -193,6 +195,25 @@ Win32Window::MessageHandler(HWND hwnd,
         PostQuitMessage(0);
       }
       return 0;
+
+    // Smallest size the user can drag the window to: the page must stay at
+    // least as wide as an iPhone SE screen (375 points = 375 logical
+    // pixels, scaled for this display).
+    case WM_GETMINMAXINFO: {
+      constexpr int kMinPageWidth = 375;
+      auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+      RECT window_rect, client_rect;
+      GetWindowRect(hwnd, &window_rect);
+      GetClientRect(hwnd, &client_rect);
+      // The side borders are outside the page; add them on.
+      const int borders = (window_rect.right - window_rect.left) -
+                          (client_rect.right - client_rect.left);
+      const int min_width =
+          MulDiv(kMinPageWidth, GetDpiForWindow(hwnd), 96) + borders;
+      info->ptMinTrackSize.x = std::max<LONG>(info->ptMinTrackSize.x,
+                                              min_width);
+      return 0;
+    }
 
     case WM_DPICHANGED: {
       auto newRectSize = reinterpret_cast<RECT*>(lparam);
