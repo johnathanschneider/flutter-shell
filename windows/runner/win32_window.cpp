@@ -198,9 +198,10 @@ Win32Window::MessageHandler(HWND hwnd,
 
     // Smallest size the user can drag the window to: the page must stay at
     // least as wide as an iPhone SE screen (375 points = 375 logical
-    // pixels, scaled for this display).
+    // pixels, scaled for this display), and at least that tall too.
     case WM_GETMINMAXINFO: {
       constexpr int kMinPageWidth = 375;
+      constexpr int kMinPageHeight = kMinPageWidth;
       auto info = reinterpret_cast<MINMAXINFO*>(lparam);
       RECT window_rect, client_rect;
       GetWindowRect(hwnd, &window_rect);
@@ -212,6 +213,15 @@ Win32Window::MessageHandler(HWND hwnd,
           MulDiv(kMinPageWidth, GetDpiForWindow(hwnd), 96) + borders;
       info->ptMinTrackSize.x = std::max<LONG>(info->ptMinTrackSize.x,
                                               min_width);
+      // Above and below the page: the title bar (inside the client area)
+      // and the bottom border.
+      const int above_below = (window_rect.bottom - window_rect.top) -
+                              (client_rect.bottom - client_rect.top) +
+                              title_bar_.height();
+      const int min_height =
+          MulDiv(kMinPageHeight, GetDpiForWindow(hwnd), 96) + above_below;
+      info->ptMinTrackSize.y = std::max<LONG>(info->ptMinTrackSize.y,
+                                              min_height);
       return 0;
     }
 
