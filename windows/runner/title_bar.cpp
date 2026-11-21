@@ -576,11 +576,18 @@ LRESULT TitleBar::HitTest(HWND window, LPARAM lparam) const {
       }
     }
     // Icon: click opens the system menu, double-click closes (stock). The
-    // target is the whole corner, a caption button wide and the full bar
-    // tall, not just the 16x16 icon - the same size as the close button.
+    // target is the whole corner, full bar height, from the window edge past
+    // the icon up to where the title's space starts (so it follows the icon
+    // if kIconLeft / kIconTextGap change), and never narrower than a caption
+    // button.
     RECT client;
     GetClientRect(window, &client);
-    const int menu_width = Scale(kButtonWidth, GetDpiForWindow(window));
+    const UINT dpi = GetDpiForWindow(window);
+    const RECT icon = IconRect(window);
+    const int reach = (right_to_left_ ? client.right - icon.left
+                                      : icon.right - client.left) +
+                      Scale(kIconTextGap, dpi);
+    const int menu_width = std::max(reach, Scale(kButtonWidth, dpi));
     const bool in_menu_corner = right_to_left_
                                     ? point.x >= client.right - menu_width
                                     : point.x < client.left + menu_width;
