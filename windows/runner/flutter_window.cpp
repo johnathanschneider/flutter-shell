@@ -4,22 +4,29 @@
 
 #include <optional>
 
+#include "app_theme.h"
 #include "flutter/generated_plugin_registrant.h"
 
 namespace {
 
-// The contrast theme's Background colour as 0xAARRGGBB, or null when no
-// contrast theme is on.
-flutter::EncodableValue ContrastBackground() {
+// What Dart needs to colour the page: {"dark": bool, "contrast": the
+// contrast theme's Background colour as 0xAARRGGBB, or null when no
+// contrast theme is on}.
+flutter::EncodableValue ThemeInfo() {
+  flutter::EncodableValue contrast_color;
   HIGHCONTRASTW contrast = {sizeof(contrast)};
   SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0);
-  if (!(contrast.dwFlags & HCF_HIGHCONTRASTON)) {
-    return flutter::EncodableValue();
+  if (contrast.dwFlags & HCF_HIGHCONTRASTON) {
+    const COLORREF color = GetSysColor(COLOR_WINDOW);
+    contrast_color = flutter::EncodableValue(static_cast<int64_t>(
+        0xFF000000u | (GetRValue(color) << 16) | (GetGValue(color) << 8) |
+        GetBValue(color)));
   }
-  const COLORREF color = GetSysColor(COLOR_WINDOW);
-  return flutter::EncodableValue(static_cast<int64_t>(
-      0xFF000000u | (GetRValue(color) << 16) | (GetGValue(color) << 8) |
-      GetBValue(color)));
+  return flutter::EncodableValue(flutter::EncodableMap{
+      {flutter::EncodableValue("dark"),
+       flutter::EncodableValue(AppUsesDarkMode())},
+      {flutter::EncodableValue("contrast"), contrast_color},
+  });
 }
 
 }  // namespace
@@ -47,14 +54,14 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
 
   // Dart asks for the colour at startup ("get"); we push changes ("changed").
-  contrast_channel_ =
+  theme_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          flutter_controller_->engine()->messenger(), "sketchpad/contrast",
+          flutter_controller_->engine()->messenger(), "sketchpad/theme",
           &flutter::StandardMethodCodec::GetInstance());
-  contrast_channel_->SetMethodCallHandler(
+  theme_channel_->SetMethodCallHandler(
       [](const auto& call, auto result) {
         if (call.method_name() == "get") {
-          result->Success(ContrastBackground());
+          result->Success(ThemeInfo());
         } else {
           result->NotImplemented();
         }
@@ -74,7 +81,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
-  contrast_channel_ = nullptr;
+  theme_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -100,21 +107,20 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
-    // Contrast theme switched on/off or changed.
+    // Light/dark mode or contrast theme changed.
     case WM_SETTINGCHANGE:
     case WM_SYSCOLORCHANGE:
     case WM_THEMECHANGED:
-      SendContrastBackground();
+      SendTheme();
       break;
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
 }
 
-void FlutterWindow::SendContrastBackground() {
-  if (contrast_channel_) {
-    contrast_channel_->InvokeMethod(
-        "changed",
-        std::make_unique<flutter::EncodableValue>(ContrastBackground()));
+void FlutterWindow::SendTheme() {
+  if (theme_channel_) {
+    theme_channel_->InvokeMethod(
+        "changed", std::make_unique<flutter::EncodableValue>(ThemeInfo()));
   }
 }

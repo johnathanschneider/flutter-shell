@@ -31,12 +31,11 @@ class FlutterWindow : public Win32Window {
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
 
-  // Tells Dart the page background colour for contrast themes (see
-  // lib/main.dart): the theme's Background colour as 0xAARRGGBB, or null
-  // when no contrast theme is on.
+  // Tells Dart whether to look light or dark (app_theme.h) and the contrast
+  // theme's Background colour, if any (see lib/main.dart).
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
-      contrast_channel_;
-  void SendContrastBackground();
+      theme_channel_;
+  void SendTheme();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
