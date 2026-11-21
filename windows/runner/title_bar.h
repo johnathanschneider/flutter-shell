@@ -85,6 +85,10 @@ class TitleBar {
   Palette inactive_palette_ = {};
 
   HWND tooltip_ = nullptr;
+
+  // UI Automation root element for screen readers (created on first
+  // request; see uia_title_bar.h).
+  struct IRawElementProviderSimple* uia_root_ = nullptr;
 };
 
 #endif  // RUNNER_TITLE_BAR_H_

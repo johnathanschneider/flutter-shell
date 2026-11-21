@@ -1,5 +1,7 @@
 #include "title_bar.h"
 
+#include "uia_title_bar.h"
+
 #include <commctrl.h>
 #include <oleacc.h>
 #include <windowsx.h>
@@ -175,6 +177,9 @@ std::wstring GetTitle(HWND window) {
 TitleBar::~TitleBar() {
   if (tooltip_) {
     DestroyWindow(tooltip_);
+  }
+  if (uia_root_) {
+    uia_root_->Release();
   }
 }
 
@@ -361,6 +366,28 @@ std::optional<LRESULT> TitleBar::HandleMessage(HWND window,
     // and Windows asks the window with this message. Answer with our layout.
     case WM_GETTITLEBARINFOEX:
       return FillTitleBarInfo(window, wparam, lparam);
+
+    // UI Automation (Narrator etc.) asking for the window's accessibility
+    // tree: hand out ours, which adds the title bar and its buttons (see
+    // uia_title_bar.h). Other requests (e.g. the older MSAA) go on to Windows.
+    case WM_GETOBJECT:
+      if (static_cast<long>(lparam) == static_cast<long>(UiaRootObjectId)) {
+        if (!uia_root_) {
+          uia_root_ = CreateTitleBarAccessibility(window);
+        }
+        return UiaReturnRawElementProvider(window, wparam, lparam, uia_root_);
+      }
+      return std::nullopt;
+
+    // Window closing: tell UI Automation our elements are gone.
+    case WM_DESTROY:
+      if (uia_root_) {
+        UiaReturnRawElementProvider(window, 0, 0, nullptr);
+        UiaDisconnectProvider(uia_root_);
+        uia_root_->Release();
+        uia_root_ = nullptr;
+      }
+      return std::nullopt;
   }
   return std::nullopt;
 }
