@@ -54,6 +54,15 @@ constexpr double kDarkAccentGlowActive = 0.22;
 constexpr double kDarkAccentGlowInactive = 0.10;
 constexpr double kAccentGlowReach = 1.0;
 
+// Where the title is centred. The buttons take more room than the icon, so
+// "the middle of the bar" and "the middle of the free space between icon and
+// buttons" differ. Narrow windows use the free space's middle (the title
+// looks squeezed toward the buttons otherwise), wide windows the bar's
+// middle, sliding smoothly between the two over this range of widths
+// (logical pixels).
+constexpr int kTitleCentreNarrowWidth = 400;
+constexpr int kTitleCentreWideWidth = 1000;
+
 // Tooltip texts (the stock English ones).
 constexpr const wchar_t kMinimizeTip[] = L"Minimize";
 constexpr const wchar_t kMaximizeTip[] = L"Maximize";
@@ -650,9 +659,10 @@ void TitleBar::Paint(HWND window, HDC dc) const {
       text_color = GetSysColor(COLOR_BTNTEXT);
     }
     SetTextColor(mem, text_color);
-    // Centred across the whole bar. If the window is too narrow for that,
-    // slide it over so it stays clear of the icon and the buttons (and cut
-    // it off with "..." if even that isn't enough).
+    // Centred: in the free space between icon and buttons when the window
+    // is narrow, across the whole bar when it's wide, sliding in between
+    // (see kTitleCentreNarrowWidth). Never overlaps the icon or buttons;
+    // cut off with "..." if it doesn't fit.
     RECT rect = TextRect(window);  // the space it's allowed in
     const std::wstring title = GetTitle(window);
     UINT format = DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX;
@@ -664,7 +674,15 @@ void TitleBar::Paint(HWND window, HDC dc) const {
               DT_SINGLELINE | DT_NOPREFIX | DT_CALCRECT);
     const int text_width = measured.right - measured.left;
     if (text_width < rect.right - rect.left) {
-      int left = (width - text_width) / 2;
+      const double bar_centre = width / 2.0;
+      const double space_centre = (rect.left + rect.right) / 2.0;
+      const double narrow = Scale(kTitleCentreNarrowWidth, dpi);
+      const double wide = Scale(kTitleCentreWideWidth, dpi);
+      double t = (width - narrow) / (wide - narrow);
+      t = std::clamp(t, 0.0, 1.0);
+      t = t * t * (3.0 - 2.0 * t);  // smoothstep: eases in and out
+      const double centre = space_centre + (bar_centre - space_centre) * t;
+      int left = static_cast<int>(centre - text_width / 2.0 + 0.5);
       left = std::max(left, static_cast<int>(rect.left));
       left = std::min(left, static_cast<int>(rect.right) - text_width);
       rect.left = left;
