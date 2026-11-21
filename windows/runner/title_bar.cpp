@@ -721,7 +721,17 @@ void TitleBar::Paint(HWND window, HDC dc) const {
       symbol = IsZoomed(window) ? L'\xE923' : L'\xE922';
     }
     SetTextColor(mem, glyph);
-    DrawTextW(mem, &symbol, 1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    // Contrast themes: bolder icons, by drawing the glyph again shifted
+    // right, down and diagonally (one pixel at 100% scale).
+    const int thicken = high_contrast_ ? Scale(1, dpi) : 0;
+    for (int dx = 0; dx <= thicken; dx++) {
+      for (int dy = 0; dy <= thicken; dy++) {
+        RECT shifted = {rect.left + dx, rect.top + dy, rect.right + dx,
+                        rect.bottom + dy};
+        DrawTextW(mem, &symbol, 1, &shifted,
+                  DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+      }
+    }
   }
   if (glyph_font) {
     SelectObject(mem, old_font);
