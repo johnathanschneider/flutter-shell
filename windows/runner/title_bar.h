@@ -70,6 +70,8 @@ class TitleBar {
   RECT TextRect(HWND window) const;
 
   LRESULT HitTest(HWND window, LPARAM lparam) const;
+  // Opens the window menu (Restore, Move, Size... Close) under the icon.
+  void ShowSystemMenu(HWND window) const;
   void Paint(HWND window, HDC dc) const;
   void Invalidate(HWND window) const;
   void SetButtonState(HWND window, int hovered, int pressed);

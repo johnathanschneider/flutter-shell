@@ -298,6 +298,18 @@ std::optional<LRESULT> TitleBar::HandleMessage(HWND window,
 
     case WM_NCLBUTTONDOWN:
     case WM_NCLBUTTONDBLCLK:
+      // The icon corner. Windows' own handling only opens the menu if the
+      // click lands where *its* title bar would put the icon, so we open it
+      // ourselves.
+      if (wparam == HTSYSMENU) {
+        SendMessageW(tooltip_, TTM_POP, 0, 0);
+        if (message == WM_NCLBUTTONDBLCLK) {
+          PostMessageW(window, WM_SYSCOMMAND, SC_CLOSE, 0);  // stock
+        } else {
+          ShowSystemMenu(window);
+        }
+        return 0;
+      }
       if (IsCaptionButton(wparam)) {
         SendMessageW(tooltip_, TTM_POP, 0, 0);
         SetButtonState(window, static_cast<int>(wparam),
@@ -541,6 +553,55 @@ RECT TitleBar::TextRect(HWND window) const {
   }
   const RECT first = ButtonRect(window, HTMINBUTTON);
   return {icon.right + gap, FrameBand(), first.left - button_gap, height_};
+}
+
+void TitleBar::ShowSystemMenu(HWND window) const {
+  HMENU menu = GetSystemMenu(window, FALSE);
+  if (!menu) {
+    return;
+  }
+  // Grey out what doesn't apply right now, like Windows does.
+  const bool maximized = IsZoomed(window);
+  auto enable = [menu](UINT command, bool on) {
+    EnableMenuItem(menu, command, MF_BYCOMMAND | (on ? MF_ENABLED : MF_GRAYED));
+  };
+  enable(SC_RESTORE, maximized);
+  enable(SC_MOVE, !maximized);
+  enable(SC_SIZE, !maximized);
+  enable(SC_MINIMIZE, true);
+  enable(SC_MAXIMIZE, !maximized);
+  enable(SC_CLOSE, true);
+  SetMenuDefaultItem(menu, SC_CLOSE, FALSE);
+
+  // Opens just under the title bar, at the icon's edge of the window.
+  RECT client;
+  GetClientRect(window, &client);
+  POINT corner = {right_to_left_ ? client.right : client.left, height_};
+  ClientToScreen(window, &corner);
+  UINT flags = TPM_RETURNCMD | TPM_TOPALIGN |
+               (GetSystemMetrics(SM_MENUDROPALIGNMENT) ? TPM_RIGHTALIGN
+                                                       : TPM_LEFTALIGN);
+  if (right_to_left_) {
+    flags = (flags & ~TPM_LEFTALIGN) | TPM_RIGHTALIGN | TPM_LAYOUTRTL;
+  }
+  const DWORD opened = GetTickCount();
+  const UINT command = TrackPopupMenu(menu, flags, corner.x, corner.y, 0,
+                                      window, nullptr);
+  if (command) {
+    PostMessageW(window, WM_SYSCOMMAND, command, 0);
+    return;
+  }
+  // Nothing picked. If the menu was closed by clicking the icon corner again
+  // quickly, that was a double-click on the icon: close, like stock Windows.
+  // (That second click goes to the menu, so we never get it as one.)
+  const int button = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
+  POINT cursor;
+  GetCursorPos(&cursor);
+  if ((GetAsyncKeyState(button) & 0x8000) &&
+      GetTickCount() - opened <= GetDoubleClickTime() &&
+      HitTest(window, MAKELPARAM(cursor.x, cursor.y)) == HTSYSMENU) {
+    PostMessageW(window, WM_SYSCOMMAND, SC_CLOSE, 0);
+  }
 }
 
 LRESULT TitleBar::HitTest(HWND window, LPARAM lparam) const {
