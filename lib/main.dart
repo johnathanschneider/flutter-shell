@@ -6,7 +6,8 @@ void main() {
   runApp(const Page());
 }
 
-/// A blank page: white, or the contrast theme's Background colour when a
+/// A blank page that follows Windows: soft light grey in light mode, soft
+/// dark grey in dark mode, or the contrast theme's Background colour when a
 /// Windows contrast theme is on.
 class Page extends StatefulWidget {
   const Page({super.key});
@@ -19,9 +20,12 @@ class _PageState extends State<Page> {
   // Set up by the Windows runner (windows/runner/flutter_window.cpp). It
   // sends the colour as 0xAARRGGBB, or null when no contrast theme is on.
   static const _contrast = MethodChannel('sketchpad/contrast');
-  static const _white = Color(0xFFFFFFFF);
+  // Moderate shades, not pure white/black: easier on the eyes.
+  static const _light = Color(0xFFEBEBEB);
+  static const _dark = Color(0xFF2B2B2B);
 
-  Color _color = _white;
+  // The contrast theme's colour, or null when no contrast theme is on.
+  Color? _contrastColor;
 
   @override
   void initState() {
@@ -35,10 +39,17 @@ class _PageState extends State<Page> {
   }
 
   void _apply(Object? value) {
-    final color = value is int ? Color(value) : _white;
-    if (mounted && color != _color) setState(() => _color = color);
+    final color = value is int ? Color(value) : null;
+    if (mounted && color != _contrastColor) {
+      setState(() => _contrastColor = color);
+    }
   }
 
   @override
-  Widget build(BuildContext context) => ColoredBox(color: _color);
+  Widget build(BuildContext context) {
+    // Light/dark mode; rebuilds by itself when the Windows setting changes.
+    final dark =
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    return ColoredBox(color: _contrastColor ?? (dark ? _dark : _light));
+  }
 }
